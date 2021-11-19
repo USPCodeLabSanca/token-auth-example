@@ -1,0 +1,37 @@
+body {
+    display: flex;
+    padding: 0;
+    margin: 0;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+    background-image: url(https://cdn1.vectorstock.com/i/1000x1000/79/10/abstract-blue-wave-pattern-background-vector-26797910.jpg);
+    font-family: sans-serif;
+}
+
+body h1 {
+    position: relative;
+    top: 4rem;
+}
+
+#form {
+    margin: auto 0;
+    background-color: rgb(199, 255, 250);
+    width: 25%;
+    height: 40%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-radius: 5%;
+}
+
+#form h2 {
+    font-size: 2rem;
+    margin-top: 1em;
+}
+
+.username, .password {
+    width: 75%;
+    margin: 1.5rem;
+}
