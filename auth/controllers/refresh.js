@@ -29,11 +29,16 @@ module.exports.createToken = async (req, res) => {
 }
 
 module.exports.logoutUser = async (req, res) => {
-    refreshModel.findByIdAndRemove({token: req.body.token}, (err, token) => {
-        if (token)
-            return res.sendStatus(200);
-        res.sendStatus(404);
-    });
+    const token = req.body.token;
+    jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, (err, tokenJWT) => {
+        if (err)
+            return res.status(403).send({error: 'Token is not valid'})
+        refreshModel.findByIdAndDelete(tokenJWT.sub, (err, doc) => {
+            if (err)
+                return res.status(404).send({error: 'Token not found'});
+            return res.status(200).send('User logged out');
+        })
+    }) 
 }
 
 module.exports.loginUser = async (req, res) => {
