@@ -8,22 +8,28 @@ module.exports.createToken = async (req, res) => {
     if (!refreshToken)
         return res.sendStatus(401)
 
+    // Vejo se o token existe no banco de dados
     if (await refreshModel.exists({token: refreshToken})) {
-        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+        // Vejo se o token é válido
+        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, user) => {
             if (err)
-                return res.sendStatus(403)
-            console.log(user);
+                return res.status(403).send({error: 'Token is not valid'})
             const accessToken = generateAccessToken({sub: user.sub});
-            return res.status(200).json({accessToken: accessToken});
+            const newRefreshToken = jwt.sign({sub: user.sub}, process.env.REFRESH_TOKEN_SECRET, {expiresIn: '7d'});
+
+            const newRefreshDB = await refreshModel.findByIdAndUpdate(user.sub, {
+                token: newRefreshToken
+            }, {new: true});
+
+            return res.status(200).json({accessToken: accessToken, refreshToken: newRefreshToken});
         })
     }
-    else {
-        return res.sendStatus(403);
-    }
+    else
+        return res.status(403).send("Token not found");
 }
 
 module.exports.logoutUser = async (req, res) => {
-    refreshModel.findOneAndRemove({token: req.body.token}, (err, token) => {
+    refreshModel.findByIdAndRemove({token: req.body.token}, (err, token) => {
         if (token)
             return res.sendStatus(200);
         res.sendStatus(404);
@@ -42,20 +48,13 @@ module.exports.loginUser = async (req, res) => {
             const user = response.data;
             const accessToken = generateAccessToken({sub: user._id});
 
-            const refreshToken = jwt.sign({sub: user._id}, process.env.REFRESH_TOKEN_SECRET, {expiresIn: '5d'});
-            // return res.status(200).cookie("accessToken", accessToken, {httpOnly: true, sameSite: 'lax'});
+            const refreshToken = jwt.sign({sub: user._id}, process.env.REFRESH_TOKEN_SECRET, {expiresIn: '7d'});
 
             const dbRefreshToken = new refreshModel({
-                token: refreshToken
+                token: refreshToken,
+                _id: user._id
             });
             await dbRefreshToken.save();
-
-            /*
-            res.cookie("accessToken", accessToken, {httpOnly: true, sameSite: 'lax'});
-            res.cookie("refreshToken", refreshToken, {httpOnly: true, sameSite: 'lax'});
-            res.send('Cookies sent');
-            */
-
             return res.status(200).send({accessToken: accessToken, refreshToken: refreshToken});
         }
         res.status(401).send({error: 'Wrong Password'})
@@ -67,5 +66,5 @@ module.exports.loginUser = async (req, res) => {
 }
 
 const generateAccessToken = user => {
-    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '15s'});
+    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '15s'})
 }

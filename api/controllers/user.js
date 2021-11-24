@@ -26,8 +26,8 @@ module.exports.createUser = async (req, res) => {
 module.exports.getUser = async (req, res) => {
     try {
         const sub = req.sub;
-        
-        if (req.params.id !== sub)
+
+        if (req.params.id != sub)
             return res.status(401).send({error: 'No access to this user'});
 
         const user = await userModel.findById(sub);
@@ -41,21 +41,6 @@ module.exports.getUser = async (req, res) => {
         console.log(JSON.stringify(error));
         return res.status(504).send({'error': 'timed out'});
     }
-}
-
-module.exports.authenticateUser = async (req, res) => {
-    const {username, password} = req.body;
-
-    const user = await userModel.findOne({username: username});
-
-    if (!user)
-        return res.status(404).send({error: 'User not Found'});
-    
-    if (await bcrypt.compare(password, user.password)){
-        return res.status(200).send(user)
-    }
-    else
-        res.status(401).send(false)
 }
 
 module.exports.validateToken = (req, res, next) => {
@@ -73,3 +58,18 @@ module.exports.validateToken = (req, res, next) => {
         next();
     });
 };
+
+module.exports.authenticateUser = async (req, res) => {
+    const {username, password} = req.body;
+
+    const user = await userModel.findOne({username: username});
+
+    if (!user)
+        return res.status(404).send({error: 'User not Found'});
+    
+    if (await bcrypt.compare(password, user.password)){
+        return res.status(200).send(user)
+    }
+    else
+        res.status(401).send(false)
+}
